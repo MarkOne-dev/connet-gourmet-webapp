@@ -93,25 +93,30 @@ export class PostHttpRepository implements PostRepository {
   createPost(content: string, imageUrl?: string, videoUrl?: string, location?: string, ingredients?: string[]): Observable<Post> {
     const storedUser = localStorage.getItem('gc_user');
     const currentUserId = storedUser ? JSON.parse(storedUser).id : 'chef-gaston';
+    const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+    const hasIngredients = ingredients && ingredients.length > 0;
 
-    const postPayload = {
+    const postPayload: any = {
       creatorId: currentUserId,
+      creatorName: parsedUser ? parsedUser.name : 'Chef Gastón',
+      creatorAvatar: parsedUser ? parsedUser.avatarUrl : 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYUXB9Os_jDGO3-j-8Om-Pl-Dp41NYKcnHVMnxQR4A_bYZvEj4YpU3m1fMLkp6tpn7OWHW5lQluX61Szjk1-OEsdwJXzkfX4_MA7lzxnOZDA5bo-WWY_gQLx_RlaBQFAq7GDzah-Hgl75nSghnbXZtagXABkvdeurzfhRC9MgpQmz8_yfECS4BO9hH_RxCECcw0ozVDsd7buSN7F1uAWW4Bfn8d45ITi--PhZjUZ2nNfTnLor1jzAjgw',
+      creatorLocation: location || 'Lima, Perú',
       type: 'recipe',
-      content: {
-        text: content,
-        media: [
-          ...(imageUrl ? [{ type: 'image', url: imageUrl }] : []),
-          ...(videoUrl ? [{ type: 'video', url: videoUrl }] : [])
-        ],
-        tags: ingredients || []
-      },
-      location: {
-        type: 'Point',
-        coordinates: [-76.9562, -12.0483]
-      },
-      hasRecipe: ingredients && ingredients.length > 0 ? true : false,
-      locationLabel: location || 'Lima, Peru'
+      content: content,
+      location: null,
+      hasRecipe: hasIngredients,
+      locationLabel: location || 'Miraflores, Lima'
     };
+
+    if (imageUrl && imageUrl.trim()) {
+      postPayload.imageUrl = imageUrl.trim();
+    }
+    if (hasIngredients) {
+      postPayload.recipeTitle = 'Receta de ' + content.slice(0, 30);
+      postPayload.ingredients = ingredients;
+    }
+
+    console.log('Sending post payload:', JSON.stringify(postPayload, null, 2));
 
     return this.http.post<any>(this.apiUrl, postPayload).pipe(
       map(res => this.mapPostFromApi(res))

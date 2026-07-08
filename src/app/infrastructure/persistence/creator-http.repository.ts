@@ -15,16 +15,34 @@ export class CreatorHttpRepository implements CreatorRepository {
   constructor(private http: HttpClient) {}
 
   private mapCreatorFromApi(apiUser: any, isFollowing = false): Creator {
+    const name = apiUser.name || apiUser.fullName || apiUser.profile?.fullName || apiUser.username || 'Chef Creador';
+    const avatarUrl = apiUser.avatarUrl || apiUser.profile?.avatarUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYUXB9Os_jDGO3-j-8Om-Pl-Dp41NYKcnHVMnxQR4A_bYZvEj4YpU3m1fMLkp6tpn7OWHW5lQluX61Szjk1-OEsdwJXzkfX4_MA7lzxnOZDA5bo-WWY_gQLx_RlaBQFAq7GDzah-Hgl75nSghnbXZtagXABkvdeurzfhRC9MgpQmz8_yfECS4BO9hH_RxCECcw0ozVDsd7buSN7F1uAWW4Bfn8d45ITi--PhZjUZ2nNfTnLor1jzAjgw';
+    const coverUrl = apiUser.coverUrl || apiUser.profile?.coverUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBSC0Xt4PiAJSWcEkaqCd3qABeSj-U2TyIrxB3YuRThVx1wLLUXO8C9887wSeotLg6g1PFJ3fNgojMzi3IvMSpHk4oqDe39fxcjx2zqB2ChRznwAWWQezqn_dIubuzYV_JjYcmwiW5ZDJAW6Pu5FinFkfeIxTtCeau_Sgeu1kGMsydMTCN2v0K4MGnUDUO1bnBT9V2zy4C7e8y7OvQlGLpYY0-WpjrIlBmmtbatZAkOuL5HENpJDaD-yA';
+    
+    let location = 'Lima, Peru';
+    const coords = apiUser.location?.coordinates || apiUser.profile?.location?.coordinates;
+    if (coords && coords.length >= 2) {
+      location = `${coords[1]}, ${coords[0]}`;
+    } else if (apiUser.creatorLocation) {
+      location = apiUser.creatorLocation;
+    } else if (apiUser.profile?.locationLabel || apiUser.locationLabel) {
+      location = apiUser.profile?.locationLabel || apiUser.locationLabel;
+    }
+
+    const bio = apiUser.bio || apiUser.profile?.bio || 'Lover of traditional flavors and sustainable ingredients';
+    const followersCount = apiUser.followersCount !== undefined ? apiUser.followersCount : (apiUser.stats?.followersCount || apiUser.stats?.followers_count || 0);
+    const recipesCount = apiUser.recipesCount !== undefined ? apiUser.recipesCount : (apiUser.postsCount !== undefined ? apiUser.postsCount : (apiUser.stats?.postsCount || apiUser.stats?.posts_count || 0));
+
     return {
       id: apiUser.id,
-      name: apiUser.profile?.fullName || apiUser.username || 'Chef Creador',
-      avatarUrl: apiUser.profile?.avatarUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYUXB9Os_jDGO3-j-8Om-Pl-Dp41NYKcnHVMnxQR4A_bYZvEj4YpU3m1fMLkp6tpn7OWHW5lQluX61Szjk1-OEsdwJXzkfX4_MA7lzxnOZDA5bo-WWY_gQLx_RlaBQFAq7GDzah-Hgl75nSghnbXZtagXABkvdeurzfhRC9MgpQmz8_yfECS4BO9hH_RxCECcw0ozVDsd7buSN7F1uAWW4Bfn8d45ITi--PhZjUZ2nNfTnLor1jzAjgw',
-      coverUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBSC0Xt4PiAJSWcEkaqCd3qABeSj-U2TyIrxB3YuRThVx1wLLUXO8C9887wSeotLg6g1PFJ3fNgojMzi3IvMSpHk4oqDe39fxcjx2zqB2ChRznwAWWQezqn_dIubuzYV_JjYcmwiW5ZDJAW6Pu5FinFkfeIxTtCeau_Sgeu1kGMsydMTCN2v0K4MGnUDUO1bnBT9V2zy4C7e8y7OvQlGLpYY0-WpjrIlBmmtbatZAkOuL5HENpJDaD-yA',
-      location: apiUser.profile?.location?.coordinates ? `${apiUser.profile.location.coordinates[1]}, ${apiUser.profile.location.coordinates[0]}` : 'Lima, Peru',
-      bio: apiUser.profile?.bio || 'Lover of traditional flavors and sustainable ingredients',
-      followersCount: apiUser.stats?.followers_count || 0,
-      recipesCount: apiUser.stats?.posts_count || 0,
-      producersCount: 0, // Ajustado a base de datos (0 productores por defecto)
+      name,
+      avatarUrl,
+      coverUrl,
+      location,
+      bio,
+      followersCount,
+      recipesCount,
+      producersCount: apiUser.producersCount || 0,
       isFollowing: isFollowing
     };
   }
