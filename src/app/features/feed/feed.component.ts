@@ -221,11 +221,11 @@ import { CreatorFacade } from '../../application/creator/creator.facade';
                         <span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">chat_bubble</span>
                         <span class="text-label-sm text-outline group-hover:text-on-surface">{{ post.commentsCount }}</span>
                       </button>
-                      <button class="flex items-center gap-1.5 group">
+                      <button (click)="sharePost(post)" class="flex items-center gap-1.5 group">
                         <span class="material-symbols-outlined text-outline group-hover:text-tertiary transition-colors">share</span>
                       </button>
                     </div>
-                    <button (click)="bookmarkPost(post.id)" class="material-symbols-outlined text-outline hover:text-secondary-container transition-colors">bookmark</button>
+                    <button (click)="bookmarkPost(post.id)" class="material-symbols-outlined transition-colors" [ngClass]="postFacade.isPostSaved(post.id) ? 'text-secondary fill-1' : 'text-outline hover:text-secondary-container'">bookmark</button>
                   </div>
                   <!-- Content Description -->
                   <p class="text-body-md text-on-surface-variant mb-2">
@@ -387,7 +387,12 @@ export class FeedComponent implements OnInit {
   }
 
   bookmarkPost(postId: string): void {
-    this.postFacade.savePost(postId);
+    const saveId = this.postFacade.getSaveId(postId);
+    if (saveId) {
+      this.postFacade.unsavePost(saveId);
+    } else {
+      this.postFacade.savePost(postId);
+    }
   }
 
   publishPost(): void {
@@ -415,6 +420,21 @@ export class FeedComponent implements OnInit {
     this.postFacade.toggleLike(postId);
   }
 
+  sharePost(post: any): void {
+    const postUrl = `${window.location.origin}/feed#post-${post.id}`;
+    if (navigator.share) {
+      navigator.share({
+        title: post.recipeTitle || 'GourmetConnect Post',
+        text: post.content,
+        url: postUrl
+      }).catch(err => console.log('Error sharing:', err));
+    } else {
+      navigator.clipboard.writeText(postUrl).then(() => {
+        alert('¡Enlace del post copiado al portapapeles!');
+      });
+    }
+  }
+
   toggleComments(postId: string): void {
     if (this.showCommentsId === postId) {
       this.showCommentsId = null;
@@ -423,6 +443,7 @@ export class FeedComponent implements OnInit {
       if (!this.commentInputs[postId]) {
         this.commentInputs[postId] = '';
       }
+      this.postFacade.loadComments(postId);
     }
   }
 

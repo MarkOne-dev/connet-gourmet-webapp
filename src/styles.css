@@ -106,3 +106,7 @@
   background-color: rgba(252, 249, 248, 0.95);
   backdrop-filter: blur(10px);
 }
+
+.fill-1 {
+  font-variation-settings: 'FILL' 1 !important;
+}
