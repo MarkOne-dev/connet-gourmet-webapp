@@ -35,12 +35,12 @@ export class AuthFacade {
     this.errorSubject.next(null);
 
     this.http.post<any>(this.apiUrl, { email, password }).subscribe({
-      next: (apiUser) => {
+      next: (apiUser: any) => {
         const userMapped: User = {
           id: apiUser.id,
           email: apiUser.email,
-          name: apiUser.profile?.fullName || apiUser.username,
-          avatarUrl: apiUser.profile?.avatarUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYUXB9Os_jDGO3-j-8Om-Pl-Dp41NYKcnHVMnxQR4A_bYZvEj4YpU3m1fMLkp6tpn7OWHW5lQluX61Szjk1-OEsdwJXzkfX4_MA7lzxnOZDA5bo-WWY_gQLx_RlaBQFAq7GDzah-Hgl75nSghnbXZtagXABkvdeurzfhRC9MgpQmz8_yfECS4BO9hH_RxCECcw0ozVDsd7buSN7F1uAWW4Bfn8d45ITi--PhZjUZ2nNfTnLor1jzAjgw',
+          name: apiUser.name || apiUser.fullName || apiUser.profile?.fullName || apiUser.username,
+          avatarUrl: apiUser.avatarUrl || apiUser.profile?.avatarUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYUXB9Os_jDGO3-j-8Om-Pl-Dp41NYKcnHVMnxQR4A_bYZvEj4YpU3m1fMLkp6tpn7OWHW5lQluX61Szjk1-OEsdwJXzkfX4_MA7lzxnOZDA5bo-WWY_gQLx_RlaBQFAq7GDzah-Hgl75nSghnbXZtagXABkvdeurzfhRC9MgpQmz8_yfECS4BO9hH_RxCECcw0ozVDsd7buSN7F1uAWW4Bfn8d45ITi--PhZjUZ2nNfTnLor1jzAjgw',
           token: apiUser.id
         };
 
@@ -48,7 +48,7 @@ export class AuthFacade {
         this.currentUserSubject.next(userMapped);
         this.router.navigate(['/feed']);
       },
-      error: (err) => {
+      error: (err: any) => {
         const errorMsg = err.error || 'Correo o contraseña incorrectos.';
         this.errorSubject.next(typeof errorMsg === 'string' ? errorMsg : 'Error al iniciar sesión. Inténtalo de nuevo.');
       }

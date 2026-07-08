@@ -9,9 +9,13 @@ import { Post, Comment } from '../../domain/post/models/post.model';
 export class PostFacade {
   private postsSubject = new BehaviorSubject<Post[]>([]);
   private savedPostsSubject = new BehaviorSubject<any[]>([]);
+  private userPostsSubject = new BehaviorSubject<Post[]>([]);
+  private selectedPostSubject = new BehaviorSubject<Post | null>(null);
 
   posts$: Observable<Post[]> = this.postsSubject.asObservable();
   savedPosts$: Observable<any[]> = this.savedPostsSubject.asObservable();
+  userPosts$: Observable<Post[]> = this.userPostsSubject.asObservable();
+  selectedPost$: Observable<Post | null> = this.selectedPostSubject.asObservable();
 
   constructor(private postRepository: PostHttpRepository) {}
 
@@ -21,10 +25,57 @@ export class PostFacade {
     });
   }
 
+  loadPostsByUser(creatorId: string): void {
+    this.postRepository.getPostsByUser(creatorId).subscribe(posts => {
+      this.userPostsSubject.next(posts);
+    });
+  }
+
+  loadPostById(id: string): void {
+    this.postRepository.getPostById(id).subscribe(post => {
+      this.selectedPostSubject.next(post);
+    });
+  }
+
+  loadComments(postId: string): void {
+    this.postRepository.getComments(postId).subscribe({
+      next: (comments) => {
+        const currentPosts = this.postsSubject.value.map(post => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              comments: comments
+            };
+          }
+          return post;
+        });
+        this.postsSubject.next(currentPosts);
+      },
+      error: (err) => {
+        console.error('Error loading comments:', err);
+      }
+    });
+  }
+
+  isPostSaved(postId: string): boolean {
+    return this.savedPostsSubject.value.some(s => s.postId === postId);
+  }
+
+  getSaveId(postId: string): string | null {
+    const found = this.savedPostsSubject.value.find(s => s.postId === postId);
+    return found ? found.id : null;
+  }
+
   createPost(content: string, imageUrl?: string, videoUrl?: string, location?: string, ingredients?: string[]): void {
-    this.postRepository.createPost(content, imageUrl, videoUrl, location, ingredients).subscribe(newPost => {
-      const currentPosts = this.postsSubject.value;
-      this.postsSubject.next([newPost, ...currentPosts]);
+    this.postRepository.createPost(content, imageUrl, videoUrl, location, ingredients).subscribe({
+      next: (newPost) => {
+        const currentPosts = this.postsSubject.value;
+        this.postsSubject.next([newPost, ...currentPosts]);
+      },
+      error: (err) => {
+        console.error('Error creating post:', err);
+        alert('Error al publicar: ' + (err.error?.message || err.error || err.message || JSON.stringify(err)));
+      }
     });
   }
 
@@ -82,6 +133,42 @@ export class PostFacade {
       const currentSaved = this.savedPostsSubject.value.filter(s => s.id !== saveId);
       this.savedPostsSubject.next(currentSaved);
       alert('Publicación eliminada de guardados.');
+    });
+  }
+
+  updatePost(id: string, data: Partial<Post>): void {
+    this.postRepository.updatePost(id, data).subscribe(updatedPost => {
+      // Update main feed posts list
+      const feedPosts = this.postsSubject.value.map(p => p.id === id ? updatedPost : p);
+      this.postsSubject.next(feedPosts);
+
+      // Update user posts list
+      const userPosts = this.userPostsSubject.value.map(p => p.id === id ? updatedPost : p);
+      this.userPostsSubject.next(userPosts);
+
+      // Update selected post if it matches
+      const selected = this.selectedPostSubject.value;
+      if (selected && selected.id === id) {
+        this.selectedPostSubject.next(updatedPost);
+      }
+    });
+  }
+
+  deletePost(id: string): void {
+    this.postRepository.deletePost(id).subscribe(() => {
+      // Remove from feed posts
+      const feedPosts = this.postsSubject.value.filter(p => p.id !== id);
+      this.postsSubject.next(feedPosts);
+
+      // Remove from user posts
+      const userPosts = this.userPostsSubject.value.filter(p => p.id !== id);
+      this.userPostsSubject.next(userPosts);
+
+      // Reset selected post if it matches
+      const selected = this.selectedPostSubject.value;
+      if (selected && selected.id === id) {
+        this.selectedPostSubject.next(null);
+      }
     });
   }
 }
